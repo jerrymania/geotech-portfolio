@@ -1,0 +1,121 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Admin - Geotech Portfolio</title>
+  <style>
+    body{font-family: system-ui, sans-serif; padding: 24px; background:#071024; color:#fff}
+    .card{background:#0b2130; padding:16px; border-radius:8px; margin-bottom:12px}
+    input, textarea{width:100%; padding:8px; margin-top:6px; border-radius:6px; border:1px solid #244;}
+    button{padding:10px 14px; border-radius:8px; background:#2b8ad6; color:#fff; cursor:pointer; border:0}
+    .small{font-size:0.9rem; color:#9fb}
+  </style>
+</head>
+<body>
+  <h1>Admin - Geotech Portfolio</h1>
+
+  <!-- UPLOAD IMAGE -->
+  <div class="card">
+    <h3>Upload image to gallery</h3>
+    <input id="file" type="file" accept="image/*"/>
+    <input id="img-caption" placeholder="Caption (optional)"/>
+    <div style="margin-top:8px">
+      <button id="upload-image">Upload image</button>
+      <span id="upload-status" class="small"></span>
+    </div>
+  </div>
+
+  <!-- ADD SOIL SAMPLE -->
+  <div class="card">
+    <h3>Add soil sample</h3>
+    <input id="sample-id" placeholder="Sample ID (e.g., BC-01)"/>
+    <input id="sample-name" placeholder="Name (e.g., Black Cotton)"/>
+    <input id="sample-location" placeholder="Location"/>
+    <input id="sample-color" placeholder="Color hex (e.g., #2d2d2d)"/>
+    <input id="sample-texture" placeholder="Texture"/>
+    <textarea id="sample-desc" placeholder="Description"></textarea>
+    <div style="margin-top:8px">
+      <button id="add-soil">Add Soil Sample</button>
+      <span id="add-soil-status" class="small"></span>
+    </div>
+  </div>
+
+  <script>
+    // YOUR SUPABASE KEYS (inserted)
+    const SUPABASE_URL = "https://masgbgxihatymnqlwjej.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hc2diZ3hpaGF0eW1ucWx3amVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMDY0NTEsImV4cCI6MjA3ODc4MjQ1MX0.iVyY49idmzRy7r2ISFonQDCuBkIBycn-7Z7JbBxsVKQ";
+
+    async function uploadFile(file, path) {
+      const bucket = "public";
+      const endpoint = `${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`;
+      const form = new FormData();
+      form.append("file", file);
+
+      const res = await fetch(endpoint, {
+        method: "POST",
+        headers: { apikey: SUPABASE_ANON_KEY },
+        body: form
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
+    async function insertRow(table, row) {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
+        method: "POST",
+        headers: {
+          apikey: SUPABASE_ANON_KEY,
+          "Content-Type": "application/json",
+          Prefer: "return=representation"
+        },
+        body: JSON.stringify(row)
+      });
+
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
+    document.getElementById("upload-image").onclick = async () => {
+      const fileEl = document.getElementById("file");
+      const caption = document.getElementById("img-caption").value;
+      if (!fileEl.files[0]) { alert("Choose an image"); return; }
+
+      const file = fileEl.files[0];
+      const path = `images/${Date.now()}_${file.name}`;
+
+      document.getElementById("upload-status").innerText = "Uploading...";
+
+      try {
+        await uploadFile(file, path);
+        await insertRow("images", { file_path: path, caption });
+        document.getElementById("upload-status").innerText = "Uploaded & saved!";
+      } catch (e) {
+        document.getElementById("upload-status").innerText = "Error: " + e.message;
+        console.error(e);
+      }
+    };
+
+    document.getElementById("add-soil").onclick = async () => {
+      const row = {
+        sample_id: document.getElementById("sample-id").value,
+        name: document.getElementById("sample-name").value,
+        location: document.getElementById("sample-location").value,
+        color: document.getElementById("sample-color").value,
+        texture: document.getElementById("sample-texture").value,
+        description: document.getElementById("sample-desc").value
+      };
+
+      document.getElementById("add-soil-status").innerText = "Saving...";
+
+      try {
+        await insertRow("soils", row);
+        document.getElementById("add-soil-status").innerText = "Saved!";
+      } catch (e) {
+        document.getElementById("add-soil-status").innerText = "Error: " + e.message;
+        console.error(e);
+      }
+    };
+  </script>
+</body>
+</html>
