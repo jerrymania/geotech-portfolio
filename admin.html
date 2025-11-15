@@ -41,23 +41,31 @@
   </div>
 
   <script>
-    // YOUR SUPABASE KEYS (inserted)
+    /* YOUR SUPABASE CREDENTIALS (already inserted) */
     const SUPABASE_URL = "https://masgbgxihatymnqlwjej.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hc2diZ3hpaGF0eW1ucWx3amVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMDY0NTEsImV4cCI6MjA3ODc4MjQ1MX0.iVyY49idmzRy7r2ISFonQDCuBkIBycn-7Z7JbBxsVKQ";
 
+    /* FIXED UPLOAD FUNCTION WITH AUTHORIZATION HEADER */
     async function uploadFile(file, path) {
       const bucket = "public";
       const endpoint = `${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`;
+      
       const form = new FormData();
       form.append("file", file);
 
       const res = await fetch(endpoint, {
         method: "POST",
-        headers: { apikey: SUPABASE_ANON_KEY },
+        headers: {
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+        },
         body: form
       });
 
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt);
+      }
       return res.json();
     }
 
@@ -65,21 +73,29 @@
       const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
         method: "POST",
         headers: {
-          apikey: SUPABASE_ANON_KEY,
+          "apikey": SUPABASE_ANON_KEY,
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
           "Content-Type": "application/json",
-          Prefer: "return=representation"
+          "Prefer": "return=representation"
         },
         body: JSON.stringify(row)
       });
 
-      if (!res.ok) throw new Error(await res.text());
+      if (!res.ok) {
+        const txt = await res.text();
+        throw new Error(txt);
+      }
       return res.json();
     }
 
     document.getElementById("upload-image").onclick = async () => {
       const fileEl = document.getElementById("file");
       const caption = document.getElementById("img-caption").value;
-      if (!fileEl.files[0]) { alert("Choose an image"); return; }
+
+      if (!fileEl.files[0]) {
+        alert("Choose an image");
+        return;
+      }
 
       const file = fileEl.files[0];
       const path = `images/${Date.now()}_${file.name}`;
