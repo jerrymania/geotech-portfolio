@@ -2,19 +2,35 @@
 <html lang="en" data-theme="base44">
 <head>
   <meta charset="utf-8"/>
+  <link rel="icon" href="/logo_v3.png"/>
   <meta name="viewport" content="width=device-width,initial-scale=1"/>
   <title>Geotechnical Lab Portfolio</title>
-  <link rel="icon" href="/logo_v3.png"/>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    /* small extra styles */
     .micro { font-size: 0.95rem; }
     .kpi-count { padding: 1.25rem; border-radius: .5rem; background: rgba(255,255,255,0.03); }
-    /* 3D stack container fallback */
     .soil-layer { border-radius: 1rem; box-shadow: 0 15px 40px rgba(2,6,23,0.6); position: relative; overflow: hidden; }
   </style>
 </head>
 <body class="min-h-screen bg-[#0F1724] text-white">
+
+  <header class="py-6">
+    <div class="max-w-7xl mx-auto px-6 flex items-center justify-between">
+      <div class="flex items-center gap-4">
+        <img src="/logo_v3.png" alt="logo" style="width:48px;height:48px;border-radius:8px"/>
+        <div>
+          <div class="font-bold text-lg">Geotech Portfolio</div>
+          <div class="text-sm text-gray-400">Laboratory documentation & reports</div>
+        </div>
+      </div>
+      <nav class="flex gap-4 text-gray-200">
+        <a href="/" class="hover:underline">Home</a>
+        <a href="/gallery.html" class="hover:underline">Gallery</a>
+        <a href="/admin.html" class="hover:underline">Admin</a>
+        <a href="#reports" class="hover:underline">Reports</a>
+      </nav>
+    </div>
+  </header>
 
   <main class="min-h-screen">
     <!-- Hero -->
@@ -35,11 +51,11 @@
             </div>
 
             <div class="text-gray-400 space-y-1">
-              <p>Names, Courses, course, semester, Institute</p>
+              <p>Names, Courses, Semester, Institute</p>
             </div>
 
             <div class="flex flex-wrap gap-4 pt-4">
-              <a href="#tests" class="inline-flex items-center px-8 py-4 bg-[#C34A36] rounded-xl font-semibold text-lg micro shadow-lg">
+              <a href="/test-dashboard.html" class="inline-flex items-center px-8 py-4 bg-[#C34A36] rounded-xl font-semibold text-lg micro shadow-lg">
                 Open Test Dashboard
                 <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
               </a>
@@ -51,11 +67,11 @@
             </div>
           </div>
 
-          <!-- Right: 3D Soil Stack -->
+          <!-- Right: 3D Soil Stack (static) -->
           <div class="relative flex items-center justify-center">
             <div class="relative w-full max-w-md mx-auto" style="perspective:1000px">
               <div id="soil-stack" class="relative" style="transform: rotateX(60deg) rotateZ(-45deg); transform-style: preserve-3d;">
-                <!-- layers will be injected by JS -->
+                <!-- layers injected by JS -->
               </div>
             </div>
           </div>
@@ -79,7 +95,7 @@
       <div class="max-w-7xl mx-auto px-6 lg:px-12">
         <div class="grid md:grid-cols-4 gap-8 text-center">
           <div class="kpi-count">
-            <div class="text-5xl font-bold text-[#D9B88A] mb-2">3</div>
+            <div class="text-5xl font-bold text-[#D9B88A] mb-2" id="kpi-samples">3</div>
             <div class="text-lg font-semibold mb-1">Soil Samples</div>
             <div class="text-sm text-gray-300">types</div>
           </div>
@@ -101,72 +117,117 @@
         </div>
       </div>
     </section>
-
   </main>
 
+  <footer class="py-8">
+    <div class="max-w-7xl mx-auto px-6 text-gray-400 text-sm">
+      © Geotech Portfolio — created using Base44 export & static deployment.
+    </div>
+  </footer>
+
+  <!-- ========== SCRIPTS: renders soils from Supabase (full-file) ========== -->
   <script>
-    // Use the same defaultSamples from your React code
+    // === Supabase credentials you provided (already embedded) ===
+    const SUPABASE_URL = "https://masgbgxihatymnqlwjej.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hc2diZ3hpaGF0eW1ucWx3amVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMDY0NTEsImV4cCI6MjA3ODc4MjQ1MX0.iVyY49idmzRy7r2ISFonQDCuBkIBycn-7Z7JbBxsVKQ";
+    const BUCKET = "public_geo_tech";
+
+    // fallback samples (if DB empty or fetch fails)
     const defaultSamples = [
       { sampleID: "BC-01", name: "Black Cotton Soil", location: "Near Hubli", color: "#2d2d2d", texture: "Fine texture", description: "Dark color" },
       { sampleID: "RED-01", name: "Red Soil", location: "Near Mysore", color: "#A0522D", texture: "Moderate texture", description: "Reddish color, Moderate plasticity" },
       { sampleID: "SND-01", name: "Sandy Soil", location: "Coastal Region", color: "#DEB887", texture: "Coarse texture", description: "Light color" }
     ];
 
-    // Render samples cards
-    const grid = document.getElementById('samples-grid');
-    defaultSamples.slice(0,3).forEach(soil => {
-      const a = document.createElement('a');
-      a.href = '#soil-samples';
-      a.className = 'block bg-[#1a2332] hover:bg-[#1f2937] rounded-2xl p-8 micro border border-white/10 hover:border-white/20 h-full';
-      a.innerHTML = `
-        <h3 class="text-2xl font-bold text-white mb-4">${soil.name}</h3>
-        <div class="space-y-3 text-gray-300">
-          <p class="text-sm"><span class="text-gray-500">Near</span> ${soil.location.split(',')[0] || 'Location'}</p>
-          <p class="text-sm"><span class="text-gray-500">Sample ID:</span> ${soil.sampleID}</p>
-        </div>
-        <div class="mt-6 pt-6 border-t border-white/10 space-y-2">
-          <p class="text-sm text-gray-400">${soil.description}</p>
-          <p class="text-sm text-gray-400">${soil.texture}</p>
-        </div>
-      `;
-      const wrapper = document.createElement('div');
-      wrapper.appendChild(a);
-      grid.appendChild(wrapper);
-    });
-
-    // Build 3D soil stack
-    const soilStack = document.getElementById('soil-stack');
-    const layers = [
-      { height: 128, gradient: 'linear-gradient(135deg, #3a3a3a 0%, #2d2d2d 100%)', dots: 30, dotColor: 'rgba(255,255,255,0.8)' },
-      { height: 128, gradient: 'linear-gradient(135deg, #B85C3D 0%, #8B4513 100%)', dots: 25, dotColor: 'rgba(0,0,0,0.8)' },
-      { height: 128, gradient: 'linear-gradient(135deg, #E8C896 0%, #D4A574 100%)', dots: 35, dotColor: 'rgba(120,40,20,0.9)' }
-    ];
-
-    layers.forEach((layer, idx) => {
-      const div = document.createElement('div');
-      div.className = 'soil-layer w-full mb-4';
-      div.style.height = layer.height + 'px';
-      div.style.background = layer.gradient;
-      div.style.transform = `translateZ(${(2-idx)*30}px)`;
-      div.style.position = 'relative';
-      // add dots
-      for(let i=0;i<layer.dots;i++){
-        const d = document.createElement('div');
-        d.style.position = 'absolute';
-        d.style.width = (idx===2? '4px':'3px');
-        d.style.height = (idx===2? '4px':'3px');
-        d.style.borderRadius = '50%';
-        d.style.background = layer.dotColor;
-        d.style.top = Math.random()*100 + '%';
-        d.style.left = Math.random()*100 + '%';
-        d.style.opacity = 0.5;
-        div.appendChild(d);
+    // fetch soils from Supabase REST
+    async function fetchSoils() {
+      try {
+        const res = await fetch(`${SUPABASE_URL}/rest/v1/soils?select=*&order=created_at.desc`, {
+          headers: { apikey: SUPABASE_ANON_KEY }
+        });
+        if (!res.ok) throw new Error(await res.text());
+        const arr = await res.json();
+        return arr.map(s => ({
+          sampleID: s.sample_id || s.id,
+          name: s.name || 'Unnamed',
+          location: s.location || '',
+          color: s.color || '#888',
+          texture: s.texture || '',
+          description: s.description || ''
+        }));
+      } catch (e) {
+        console.warn('Fetch soils failed, using defaultSamples', e);
+        return defaultSamples;
       }
-      soilStack.appendChild(div);
-    });
+    }
 
-    // small responsive fix: limit stack width
-    soilStack.parentElement.style.maxWidth = '420px';
+    // render samples into the grid
+    async function renderSamples() {
+      const samples = await fetchSoils();
+      const grid = document.getElementById('samples-grid');
+      grid.innerHTML = '';
+      samples.slice(0,3).forEach((soil, idx) => {
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = `
+          <a href="/soil-samples.html" class="block bg-[#1a2332] hover:bg-[#1f2937] rounded-2xl p-8 micro border border-white/10 hover:border-white/20 h-full">
+            <h3 class="text-2xl font-bold text-white mb-4">${soil.name}</h3>
+            <div class="space-y-3 text-gray-300">
+              <p class="text-sm"><span class="text-gray-500">Near</span> ${soil.location.split(',')[0] || 'Location'}</p>
+              <p class="text-sm"><span class="text-gray-500">Sample ID:</span> ${soil.sampleID}</p>
+            </div>
+            <div class="mt-6 pt-6 border-t border-white/10 space-y-2">
+              <p class="text-sm text-gray-400">${soil.description}</p>
+              <p class="text-sm text-gray-400">${soil.texture}</p>
+            </div>
+          </a>
+        `;
+        grid.appendChild(wrapper);
+      });
+
+      // update KPI count (samples)
+      const kpiSamples = document.getElementById('kpi-samples');
+      if (kpiSamples) kpiSamples.innerText = String(Math.max(samples.length, defaultSamples.length));
+    }
+
+    // build 3D soil stack (pure DOM)
+    function buildSoilStack() {
+      const soilStack = document.getElementById('soil-stack');
+      if (!soilStack) return;
+      soilStack.innerHTML = '';
+      const layers = [
+        { height: 128, gradient: 'linear-gradient(135deg, #3a3a3a 0%, #2d2d2d 100%)', dots: 30, dotColor: 'rgba(255,255,255,0.8)' },
+        { height: 128, gradient: 'linear-gradient(135deg, #B85C3D 0%, #8B4513 100%)', dots: 25, dotColor: 'rgba(0,0,0,0.8)' },
+        { height: 128, gradient: 'linear-gradient(135deg, #E8C896 0%, #D4A574 100%)', dots: 35, dotColor: 'rgba(120,40,20,0.9)' }
+      ];
+      layers.forEach((layer, idx) => {
+        const div = document.createElement('div');
+        div.className = 'soil-layer w-full mb-4';
+        div.style.height = layer.height + 'px';
+        div.style.background = layer.gradient;
+        div.style.transform = `translateZ(${(2-idx)*30}px)`;
+        div.style.position = 'relative';
+        for (let i=0;i<layer.dots;i++){
+          const d = document.createElement('div');
+          d.style.position = 'absolute';
+          d.style.width = (idx===2? '4px':'3px');
+          d.style.height = (idx===2? '4px':'3px');
+          d.style.borderRadius = '50%';
+          d.style.background = layer.dotColor;
+          d.style.top = Math.random()*100 + '%';
+          d.style.left = Math.random()*100 + '%';
+          d.style.opacity = 0.5;
+          div.appendChild(d);
+        }
+        soilStack.appendChild(div);
+      });
+      soilStack.parentElement.style.maxWidth = '420px';
+    }
+
+    // initialize page
+    (async () => {
+      buildSoilStack();
+      await renderSamples();
+    })();
   </script>
 </body>
 </html>
