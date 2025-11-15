@@ -1,0 +1,150 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Test Dashboard - Geotech Portfolio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body{background:#071024;color:#fff;font-family:system-ui;padding:24px}
+    .card{background:#0b2130;padding:12px;border-radius:10px}
+    .muted{color:#9fb}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+  </style>
+</head>
+<body>
+  <div class="max-w-7xl mx-auto">
+    <header class="flex items-center justify-between mb-6">
+      <div>
+        <h1 class="text-2xl font-bold">Test Dashboard</h1>
+        <div class="muted">Add tests and view results</div>
+      </div>
+      <div class="flex gap-3">
+        <a href="/" class="chip">Home</a>
+        <a href="/soil-samples.html" class="chip">Samples</a>
+        <a href="/admin.html" class="chip">Admin</a>
+      </div>
+    </header>
+
+    <section class="mb-6">
+      <div class="card">
+        <h3 class="font-semibold mb-2">Add New Test</h3>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
+          <select id="soil-select"></select>
+          <input id="test-name" placeholder="Test name (e.g., Atterberg Limits)"/>
+        </div>
+        <textarea id="test-result" placeholder='Result JSON (e.g., {"liquid_limit": 42})' style="width:100%;height:120px;margin-top:8px;background:#081827;color:#e6f0ff;padding:8px;border-radius:6px;border:1px solid #233"></textarea>
+        <div style="margin-top:8px"><button id="add-test" class="px-4 py-2">Save Test</button> <span id="add-test-status" class="muted"></span></div>
+      </div>
+    </section>
+
+    <section>
+      <h3 class="mb-3">Recent Tests</h3>
+      <div id="tests-list" class="grid">Loading tests…</div>
+    </section>
+  </div>
+
+<script>
+  const SUPABASE_URL = "https://masgbgxihatymnqlwjej.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hc2diZ3hpaGF0eW1ucWx3amVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMDY0NTEsImV4cCI6MjA3ODc4MjQ1MX0.iVyY49idmzRy7r2ISFonQDCuBkIBycn-7Z7JbBxsVKQ";
+
+  async function fetchSoils() {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/soils?select=id,name,sample_id&order=created_at.desc`, {
+      headers: { apikey: SUPABASE_ANON_KEY }
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
+
+  async function fetchTests() {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/tests?select=*&order=created_at.desc`, {
+      headers: { apikey: SUPABASE_ANON_KEY }
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
+
+  async function insertTest(row) {
+    const res = await fetch(`${SUPABASE_URL}/rest/v1/tests`, {
+      method: "POST",
+      headers: {
+        apikey: SUPABASE_ANON_KEY,
+        "Content-Type":"application/json",
+        "Prefer":"return=representation"
+      },
+      body: JSON.stringify(row)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  }
+
+  function renderTests(tests) {
+    const list = document.getElementById('tests-list');
+    list.innerHTML = '';
+    if (!tests.length) { list.innerHTML = '<div class="muted">No tests found.</div>'; return; }
+    tests.forEach(t => {
+      // pretty-print result JSON if possible
+      let pretty = '';
+      try { pretty = JSON.stringify(t.result, null, 2); } catch(e) { pretty = String(t.result); }
+      const card = document.createElement('div');
+      card.className = 'card';
+      card.innerHTML = `
+        <div class="flex justify-between items-start">
+          <div>
+            <div class="font-semibold">${escapeHtml(t.test_name || 'Unnamed test')}</div>
+            <div class="muted text-sm">Soil ID: ${escapeHtml(t.soil_id || '')}</div>
+          </div>
+          <div class="muted text-sm">${new Date(t.created_at).toLocaleString()}</div>
+        </div>
+        <pre style="margin-top:8px;background:#061223;padding:8px;border-radius:6px;color:#cfe;font-size:13px;white-space:pre-wrap">${escapeHtml(pretty)}</pre>
+      `;
+      list.appendChild(card);
+    });
+  }
+
+  function escapeHtml(t){ return (t===null||t===undefined)?'':String(t).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+
+  // init
+  (async ()=>{
+    try {
+      const soils = await fetchSoils();
+      const soilSelect = document.getElementById('soil-select');
+      soilSelect.innerHTML = '<option value="">Select soil (optional)</option>';
+      soils.forEach(s => {
+        const o = document.createElement('option'); o.value = s.id; o.textContent = `${s.name || s.sample_id || s.id}`; soilSelect.appendChild(o);
+      });
+
+      // preselect soil if ?soil=...
+      const params = new URLSearchParams(window.location.search);
+      const qs = params.get('soil');
+      if (qs) { soilSelect.value = qs; }
+
+      document.getElementById('add-test').onclick = async () => {
+        const soilId = soilSelect.value || null;
+        const name = document.getElementById('test-name').value || 'Untitled Test';
+        let resultVal = document.getElementById('test-result').value || '{}';
+        try { resultVal = JSON.parse(resultVal); } catch(e) {
+          alert('Result must be valid JSON'); return;
+        }
+        document.getElementById('add-test-status').innerText = 'Saving...';
+        try {
+          await insertTest({ soil_id: soilId, test_name: name, result: resultVal });
+          document.getElementById('add-test-status').innerText = 'Saved!';
+          // refresh tests list
+          const tests = await fetchTests();
+          renderTests(tests);
+        } catch (e) {
+          document.getElementById('add-test-status').innerText = 'Error: ' + e.message;
+          console.error(e);
+        }
+      };
+
+      const tests = await fetchTests();
+      renderTests(tests);
+    } catch (e) {
+      document.getElementById('tests-list').innerText = 'Error: ' + e.message;
+      console.error(e);
+    }
+  })();
+</script>
+</body>
+</html>
