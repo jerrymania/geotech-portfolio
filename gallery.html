@@ -1,0 +1,53 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <title>Gallery - Geotech Portfolio</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body{background:#071024;color:#fff;font-family:system-ui;padding:24px}
+    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:16px}
+    .card{background:#0b2130;padding:10px;border-radius:8px}
+    img{width:100%;height:160px;object-fit:cover;border-radius:6px}
+  </style>
+</head>
+<body>
+  <h1 class="text-2xl mb-6">Gallery</h1>
+  <div id="gallery" class="grid">Loading…</div>
+
+<script>
+  const SUPABASE_URL = "https://masgbgxihatymnqlwjej.supabase.co";
+  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hc2diZ3hpaGF0eW1ucWx3amVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMDY0NTEsImV4cCI6MjA3ODc4MjQ1MX0.iVyY49idmzRy7r2ISFonQDCuBkIBycn-7Z7JbBxsVKQ";
+  const BUCKET = "public_geo_tech";
+
+  async function loadImages() {
+    try {
+      const res = await fetch(`${SUPABASE_URL}/rest/v1/images?select=*&order=created_at.desc`, {
+        headers: { apikey: SUPABASE_ANON_KEY }
+      });
+      if (!res.ok) throw new Error(await res.text());
+      const rows = await res.json();
+      const gallery = document.getElementById('gallery');
+      gallery.innerHTML = '';
+      if (!rows.length) {
+        gallery.innerText = 'No images uploaded yet.';
+        return;
+      }
+      for (const r of rows) {
+        const filePath = r.file_path;
+        const url = `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${encodeURIComponent(filePath)}`;
+        const card = document.createElement('div');
+        card.className = 'card';
+        card.innerHTML = `<img src="${url}" alt="${(r.caption||'')}" /><div style="padding-top:8px">${(r.caption||'')}</div>`;
+        gallery.appendChild(card);
+      }
+    } catch (e) {
+      document.getElementById('gallery').innerText = 'Error loading images: ' + e.message;
+      console.error(e);
+    }
+  }
+
+  loadImages();
+</script>
+</body>
+</html>
