@@ -1,0 +1,172 @@
+<!doctype html>
+<html lang="en" data-theme="base44">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Geotechnical Lab Portfolio</title>
+  <link rel="icon" href="/logo_v3.png"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* small extra styles */
+    .micro { font-size: 0.95rem; }
+    .kpi-count { padding: 1.25rem; border-radius: .5rem; background: rgba(255,255,255,0.03); }
+    /* 3D stack container fallback */
+    .soil-layer { border-radius: 1rem; box-shadow: 0 15px 40px rgba(2,6,23,0.6); position: relative; overflow: hidden; }
+  </style>
+</head>
+<body class="min-h-screen bg-[#0F1724] text-white">
+
+  <main class="min-h-screen">
+    <!-- Hero -->
+    <section class="relative overflow-hidden">
+      <div class="max-w-7xl mx-auto px-6 lg:px-12 py-20 lg:py-32">
+        <div class="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+          <div class="space-y-8">
+            <div class="space-y-6">
+              <h1 class="text-5xl lg:text-6xl xl:text-7xl font-bold leading-tight">
+                Geotechnical<br/>
+                Engineering<br/>
+                Laboratory<br/>
+                Portfolio
+              </h1>
+              <p class="text-xl text-gray-300 leading-relaxed max-w-xl">
+                Complete documentation of soil sampling, laboratory tests, analysis, errors, and engineering conclusions.
+              </p>
+            </div>
+
+            <div class="text-gray-400 space-y-1">
+              <p>Names, Courses, course, semester, Institute</p>
+            </div>
+
+            <div class="flex flex-wrap gap-4 pt-4">
+              <a href="#tests" class="inline-flex items-center px-8 py-4 bg-[#C34A36] rounded-xl font-semibold text-lg micro shadow-lg">
+                Open Test Dashboard
+                <svg class="ml-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"/></svg>
+              </a>
+
+              <a href="#reports" class="inline-flex items-center px-8 py-4 border-2 border-white/30 hover:border-white/50 hover:bg-white/10 rounded-xl font-semibold text-lg micro">
+                <svg class="mr-2 w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/></svg>
+                Download Summary PDF
+              </a>
+            </div>
+          </div>
+
+          <!-- Right: 3D Soil Stack -->
+          <div class="relative flex items-center justify-center">
+            <div class="relative w-full max-w-md mx-auto" style="perspective:1000px">
+              <div id="soil-stack" class="relative" style="transform: rotateX(60deg) rotateZ(-45deg); transform-style: preserve-3d;">
+                <!-- layers will be injected by JS -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- Soil Quick Overview -->
+    <section class="bg-[#0d1419] py-16">
+      <div class="max-w-7xl mx-auto px-6 lg:px-12">
+        <h2 class="text-4xl font-bold text-white mb-12">Soil Quick Overview</h2>
+
+        <div id="samples-grid" class="grid md:grid-cols-3 gap-6">
+          <!-- cards injected by JS -->
+        </div>
+      </div>
+    </section>
+
+    <!-- Quick Stats -->
+    <section class="bg-gradient-to-r from-[#2B6A8A] to-[#1a4d63] text-white py-16">
+      <div class="max-w-7xl mx-auto px-6 lg:px-12">
+        <div class="grid md:grid-cols-4 gap-8 text-center">
+          <div class="kpi-count">
+            <div class="text-5xl font-bold text-[#D9B88A] mb-2">3</div>
+            <div class="text-lg font-semibold mb-1">Soil Samples</div>
+            <div class="text-sm text-gray-300">types</div>
+          </div>
+          <div class="kpi-count">
+            <div class="text-5xl font-bold text-[#D9B88A] mb-2">12+</div>
+            <div class="text-lg font-semibold mb-1">Laboratory Tests</div>
+            <div class="text-sm text-gray-300">completed</div>
+          </div>
+          <div class="kpi-count">
+            <div class="text-5xl font-bold text-[#D9B88A] mb-2">500+</div>
+            <div class="text-lg font-semibold mb-1">Data Points</div>
+            <div class="text-sm text-gray-300">recorded</div>
+          </div>
+          <div class="kpi-count">
+            <div class="text-5xl font-bold text-[#D9B88A] mb-2">80+</div>
+            <div class="text-lg font-semibold mb-1">Analysis Hours</div>
+            <div class="text-sm text-gray-300">invested</div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    // Use the same defaultSamples from your React code
+    const defaultSamples = [
+      { sampleID: "BC-01", name: "Black Cotton Soil", location: "Near Hubli", color: "#2d2d2d", texture: "Fine texture", description: "Dark color" },
+      { sampleID: "RED-01", name: "Red Soil", location: "Near Mysore", color: "#A0522D", texture: "Moderate texture", description: "Reddish color, Moderate plasticity" },
+      { sampleID: "SND-01", name: "Sandy Soil", location: "Coastal Region", color: "#DEB887", texture: "Coarse texture", description: "Light color" }
+    ];
+
+    // Render samples cards
+    const grid = document.getElementById('samples-grid');
+    defaultSamples.slice(0,3).forEach(soil => {
+      const a = document.createElement('a');
+      a.href = '#soil-samples';
+      a.className = 'block bg-[#1a2332] hover:bg-[#1f2937] rounded-2xl p-8 micro border border-white/10 hover:border-white/20 h-full';
+      a.innerHTML = `
+        <h3 class="text-2xl font-bold text-white mb-4">${soil.name}</h3>
+        <div class="space-y-3 text-gray-300">
+          <p class="text-sm"><span class="text-gray-500">Near</span> ${soil.location.split(',')[0] || 'Location'}</p>
+          <p class="text-sm"><span class="text-gray-500">Sample ID:</span> ${soil.sampleID}</p>
+        </div>
+        <div class="mt-6 pt-6 border-t border-white/10 space-y-2">
+          <p class="text-sm text-gray-400">${soil.description}</p>
+          <p class="text-sm text-gray-400">${soil.texture}</p>
+        </div>
+      `;
+      const wrapper = document.createElement('div');
+      wrapper.appendChild(a);
+      grid.appendChild(wrapper);
+    });
+
+    // Build 3D soil stack
+    const soilStack = document.getElementById('soil-stack');
+    const layers = [
+      { height: 128, gradient: 'linear-gradient(135deg, #3a3a3a 0%, #2d2d2d 100%)', dots: 30, dotColor: 'rgba(255,255,255,0.8)' },
+      { height: 128, gradient: 'linear-gradient(135deg, #B85C3D 0%, #8B4513 100%)', dots: 25, dotColor: 'rgba(0,0,0,0.8)' },
+      { height: 128, gradient: 'linear-gradient(135deg, #E8C896 0%, #D4A574 100%)', dots: 35, dotColor: 'rgba(120,40,20,0.9)' }
+    ];
+
+    layers.forEach((layer, idx) => {
+      const div = document.createElement('div');
+      div.className = 'soil-layer w-full mb-4';
+      div.style.height = layer.height + 'px';
+      div.style.background = layer.gradient;
+      div.style.transform = `translateZ(${(2-idx)*30}px)`;
+      div.style.position = 'relative';
+      // add dots
+      for(let i=0;i<layer.dots;i++){
+        const d = document.createElement('div');
+        d.style.position = 'absolute';
+        d.style.width = (idx===2? '4px':'3px');
+        d.style.height = (idx===2? '4px':'3px');
+        d.style.borderRadius = '50%';
+        d.style.background = layer.dotColor;
+        d.style.top = Math.random()*100 + '%';
+        d.style.left = Math.random()*100 + '%';
+        d.style.opacity = 0.5;
+        div.appendChild(d);
+      }
+      soilStack.appendChild(div);
+    });
+
+    // small responsive fix: limit stack width
+    soilStack.parentElement.style.maxWidth = '420px';
+  </script>
+</body>
+</html>
