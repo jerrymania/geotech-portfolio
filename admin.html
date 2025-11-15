@@ -6,7 +6,7 @@
   <style>
     body{font-family: system-ui, sans-serif; padding: 24px; background:#071024; color:#fff}
     .card{background:#0b2130; padding:16px; border-radius:8px; margin-bottom:12px}
-    input, textarea{width:100%; padding:8px; margin-top:6px; border-radius:6px; border:1px solid #244;}
+    input, textarea{width:100%; padding:8px; margin-top:6px; border-radius:6px; border:1px solid #244; background:#081722; color:#e6f0ff}
     button{padding:10px 14px; border-radius:8px; background:#2b8ad6; color:#fff; cursor:pointer; border:0}
     .small{font-size:0.9rem; color:#9fb}
   </style>
@@ -41,15 +41,14 @@
   </div>
 
   <script>
-    /* YOUR SUPABASE CREDENTIALS (already inserted) */
+    // === your Supabase settings (already filled for you) ===
     const SUPABASE_URL = "https://masgbgxihatymnqlwjej.supabase.co";
     const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hc2diZ3hpaGF0eW1ucWx3amVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMDY0NTEsImV4cCI6MjA3ODc4MjQ1MX0.iVyY49idmzRy7r2ISFonQDCuBkIBycn-7Z7JbBxsVKQ";
+    const BUCKET = "public_geo_tech"; // your bucket name - exact
 
-    /* FIXED UPLOAD FUNCTION WITH AUTHORIZATION HEADER */
+    // --- upload function (uses correct endpoint & headers) ---
     async function uploadFile(file, path) {
-      const bucket = "public";
-      const endpoint = `${SUPABASE_URL}/storage/v1/object/${bucket}/${path}`;
-      
+      const endpoint = `${SUPABASE_URL}/storage/v1/object/${BUCKET}/${path}`;
       const form = new FormData();
       form.append("file", file);
 
@@ -57,18 +56,21 @@
         method: "POST",
         headers: {
           "apikey": SUPABASE_ANON_KEY,
-          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`
+          "Authorization": `Bearer ${SUPABASE_ANON_KEY}`,
+          "x-client-info": "supabase-js/1.0"
         },
         body: form
       });
 
       if (!res.ok) {
         const txt = await res.text();
-        throw new Error(txt);
+        // Put the raw response into the error so you can paste it back to me
+        throw new Error(txt || `Upload failed: ${res.status}`);
       }
       return res.json();
     }
 
+    // --- simple REST insert helper that returns JSON or throws error text ---
     async function insertRow(table, row) {
       const res = await fetch(`${SUPABASE_URL}/rest/v1/${table}`, {
         method: "POST",
@@ -80,55 +82,47 @@
         },
         body: JSON.stringify(row)
       });
-
       if (!res.ok) {
         const txt = await res.text();
-        throw new Error(txt);
+        throw new Error(txt || `Insert failed: ${res.status}`);
       }
       return res.json();
     }
 
+    // --- UI handlers ---
     document.getElementById("upload-image").onclick = async () => {
       const fileEl = document.getElementById("file");
-      const caption = document.getElementById("img-caption").value;
-
-      if (!fileEl.files[0]) {
-        alert("Choose an image");
-        return;
-      }
-
+      const caption = document.getElementById("img-caption").value || "";
+      if (!fileEl.files[0]) { alert("Choose an image"); return; }
       const file = fileEl.files[0];
       const path = `images/${Date.now()}_${file.name}`;
-
       document.getElementById("upload-status").innerText = "Uploading...";
-
       try {
         await uploadFile(file, path);
         await insertRow("images", { file_path: path, caption });
         document.getElementById("upload-status").innerText = "Uploaded & saved!";
       } catch (e) {
-        document.getElementById("upload-status").innerText = "Error: " + e.message;
-        console.error(e);
+        // show short message but keep full response in console
+        document.getElementById("upload-status").innerText = "Error: " + (e.message || "unknown");
+        console.error("Upload error (paste this if needed):", e.message);
       }
     };
 
     document.getElementById("add-soil").onclick = async () => {
       const row = {
-        sample_id: document.getElementById("sample-id").value,
-        name: document.getElementById("sample-name").value,
-        location: document.getElementById("sample-location").value,
-        color: document.getElementById("sample-color").value,
-        texture: document.getElementById("sample-texture").value,
-        description: document.getElementById("sample-desc").value
+        sample_id: document.getElementById("sample-id").value || null,
+        name: document.getElementById("sample-name").value || null,
+        location: document.getElementById("sample-location").value || null,
+        color: document.getElementById("sample-color").value || null,
+        texture: document.getElementById("sample-texture").value || null,
+        description: document.getElementById("sample-desc").value || null
       };
-
       document.getElementById("add-soil-status").innerText = "Saving...";
-
       try {
         await insertRow("soils", row);
         document.getElementById("add-soil-status").innerText = "Saved!";
       } catch (e) {
-        document.getElementById("add-soil-status").innerText = "Error: " + e.message;
+        document.getElementById("add-soil-status").innerText = "Error: " + (e.message || "unknown");
         console.error(e);
       }
     };
