@@ -1,92 +1,247 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
-  <title>Test Dashboard — Geotech Portfolio</title>
+  <title>Test Dashboard — GeoTech Lab</title>
   <meta name="viewport" content="width=device-width,initial-scale=1" />
+
+  <!-- Fonts & Tailwind CDN (tailwind classes used lightly) -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700;800&family=Roboto:wght@400;500;700&display=swap" rel="stylesheet">
   <script src="https://cdn.tailwindcss.com"></script>
-  <!-- Chart.js for charts -->
+  <!-- Chart.js -->
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
   <style>
-    body { background: #071024; color: #fff; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
-    .muted { color: #9fb; }
-    .card { background: #0b2130; padding: 18px; border-radius: 12px; box-shadow: 0 6px 18px rgba(2,8,23,0.5); }
-    .input { background:#071827; border:1px solid #123246; color:#e6f0ff; padding:8px 10px; border-radius:8px; width:100%; }
-    pre.json { background:#061223; padding:12px; border-radius:8px; color:#cfe; font-size:13px; white-space:pre-wrap; }
-    .btn { background: linear-gradient(180deg,#2b8ad6,#1f6cb0); padding:10px 14px; border-radius:9px; color:white; border:0; font-weight:600; }
-    .small { font-size:0.9rem; color:#9fb; }
-    .table-head { color:#bcd; font-weight:600; font-size:0.95rem; }
-    .tag { background:#143b53; padding:6px 10px; border-radius:999px; font-size:0.85rem; color:#bfe; }
+    :root{
+      --primary: #0F1724;
+      --accent1: #C34A36;
+      --accent2: #D9B88A;
+      --secondary: #2B6A8A;
+      --bg: #F8FAFC;
+      --muted: #6b7280;
+      --card-shadow: 0 10px 32px rgba(2,6,23,0.08);
+    }
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: Inter, Roboto, system-ui, -apple-system, "Segoe UI", Arial;
+      background: linear-gradient(180deg,#f6fbff 0%, #f8fafc 100%);
+      color: #071227;
+    }
+
+    /* Layout */
+    .sidebar {
+      width: 280px;
+      background: var(--primary);
+      color: white;
+      position: fixed;
+      top: 0; left: 0; bottom: 0;
+      display: flex;
+      flex-direction: column;
+      z-index: 40;
+    }
+    .main {
+      margin-left: 280px;
+      min-height:100vh;
+      padding: 28px;
+    }
+
+    /* Header */
+    .hero {
+      background: linear-gradient(90deg,var(--primary), var(--secondary));
+      color: white;
+      padding: 36px;
+      border-radius: 14px;
+      margin-bottom: 20px;
+    }
+
+    /* Cards */
+    .card {
+      background: white;
+      border-radius: 14px;
+      padding: 18px;
+      box-shadow: var(--card-shadow);
+      border: 1px solid rgba(15,23,36,0.03);
+      transition: transform .18s ease, box-shadow .18s ease;
+    }
+    .card:hover { transform: translateY(-8px); box-shadow: 0 20px 60px rgba(2,6,23,0.12); }
+
+    .chip {
+      display:inline-block;
+      padding:6px 10px;
+      border-radius:12px;
+      background: rgba(217,184,138,0.08);
+      color: var(--accent1);
+      font-family: monospace;
+      font-weight:700;
+      font-size:12px;
+    }
+
+    .result-box {
+      background: linear-gradient(90deg,#ffffff,#f8fafc);
+      border-radius:10px;
+      padding:12px;
+    }
+
+    .muted { color: var(--muted); }
+    .micro { transition: all 140ms cubic-bezier(.2,.8,.2,1); }
+
+    /* Quick view modal */
+    .modal-backdrop {
+      position: fixed; inset:0; display:flex; align-items:center; justify-content:center;
+      background: rgba(0,0,0,0.6); z-index:60;
+    }
+    .modal-panel {
+      background:white; border-radius:14px; padding:22px; width:100%; max-width:920px; max-height:90vh; overflow:auto; color:var(--primary);
+    }
+
+    /* Responsive */
+    @media (max-width: 1024px) {
+      .sidebar { display: none; }
+      .main { margin-left: 0; padding:16px; }
+    }
+
+    /* small utilities */
+    .status-dot { width:11px;height:11px;border-radius:999px;display:inline-block;margin-right:8px }
+    .btn { background: linear-gradient(180deg,var(--secondary),#134b5a); color:white; padding:10px 14px; border-radius:10px; border:0; font-weight:700 }
+    .ghost { padding:8px 12px; border-radius:10px; background: rgba(15,23,36,0.04); border:1px solid rgba(15,23,36,0.03) }
+    pre.pjson { background:#f3f6f9;padding:10px;border-radius:8px;font-family:monospace; font-size:13px; color:#0b2a2f; }
   </style>
 </head>
 <body>
-  <div class="max-w-7xl mx-auto p-6">
-    <header class="flex items-start justify-between mb-6">
+  <!-- Sidebar (static links from layout.js) -->
+  <aside class="sidebar hidden lg:flex flex-col">
+    <div style="padding:22px;border-bottom:1px solid rgba(255,255,255,0.03); display:flex;align-items:center;gap:12px">
+      <div style="width:44px;height:44px;border-radius:8px;background:linear-gradient(135deg,var(--accent2),#d9b88a); display:flex;align-items:center;justify-content:center;color:var(--primary);font-weight:800">G</div>
       <div>
-        <h1 class="text-3xl font-bold">Test Dashboard</h1>
-        <div class="muted">Add tests, inspect results and visualize data — polished UI</div>
+        <div style="font-weight:800;font-size:18px">GeoTech Lab</div>
+        <div class="muted" style="font-size:12px">Portfolio</div>
       </div>
-      <div class="flex items-center gap-3">
-        <a href="/" class="small">Home</a>
-        <a href="/soil-samples.html" class="small">Soils</a>
-        <a href="/gallery.html" class="small">Gallery</a>
-        <a href="/admin.html" class="small">Admin</a>
+    </div>
+
+    <nav style="padding:18px;flex:1;overflow:auto">
+      <a href="/" class="micro block px-3 py-3 rounded-lg text-white hover:bg-gray-800">Home</a>
+      <a href="/soil-samples.html" class="micro block px-3 py-3 rounded-lg text-white hover:bg-gray-800 mt-2">Soil Samples</a>
+      <a href="/test-dashboard.html" class="micro block px-3 py-3 rounded-lg text-white hover:bg-gray-800 mt-2 bg-[#C34A36]">Test Dashboard</a>
+      <a href="/comparison.html" class="micro block px-3 py-3 rounded-lg text-white hover:bg-gray-800 mt-2">Comparison</a>
+      <a href="/gallery.html" class="micro block px-3 py-3 rounded-lg text-white hover:bg-gray-800 mt-2">Gallery</a>
+      <a href="/reports.html" class="micro block px-3 py-3 rounded-lg text-white hover:bg-gray-800 mt-2">Reports</a>
+      <a href="/lab-mistakes.html" class="micro block px-3 py-3 rounded-lg text-white hover:bg-gray-800 mt-2">Lab Mistakes</a>
+      <a href="/about-team.html" class="micro block px-3 py-3 rounded-lg text-white hover:bg-gray-800 mt-2">About Team</a>
+    </nav>
+
+    <div style="padding:16px;border-top:1px solid rgba(255,255,255,0.03)">
+      <button class="btn" onclick="location.href='/admin.html'">Open Admin</button>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <div class="main">
+    <!-- Hero area -->
+    <div class="hero card">
+      <div style="display:flex;align-items:center;justify-content:space-between;gap:16px;flex-wrap:wrap">
+        <div>
+          <h1 style="margin:0;font-size:28px;font-weight:800">Test Index Dashboard</h1>
+          <p class="muted" style="margin-top:6px">Interactive test management & comparison — view, filter, and analyze lab tests.</p>
+        </div>
+        <div style="display:flex;gap:10px">
+          <a href="/admin.html" class="btn micro">Add New Test</a>
+          <a href="/gallery.html" class="ghost micro">Open Gallery</a>
+        </div>
       </div>
-    </header>
+    </div>
 
-    <div class="grid lg:grid-cols-3 gap-6">
-      <!-- Left: Add Test -->
-      <div class="card lg:col-span-1">
-        <h2 class="text-lg font-semibold mb-3">Add New Test</h2>
+    <!-- Controls & filters -->
+    <div style="display:flex;gap:16px;margin-top:18px;flex-wrap:wrap">
+      <div style="flex:1;min-width:320px" class="card">
+        <div style="display:flex;align-items:center;gap:12px;margin-bottom:10px">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 7h18" stroke="#C34A36" stroke-width="1.6" stroke-linecap="round"/></svg>
+          <div style="font-weight:700">Filters</div>
+        </div>
 
-        <div class="space-y-3">
-          <label class="small">Soil</label>
-          <select id="soil-select" class="input"></select>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:10px">
+          <div style="position:relative">
+            <input id="q" placeholder="Search tests..." class="micro" style="width:100%;padding:10px 12px;border-radius:10px;border:1px solid rgba(15,23,36,0.06);background:transparent" />
+          </div>
 
-          <label class="small">Test name</label>
-          <input id="test-name" class="input" placeholder="e.g., Atterberg Limits" />
+          <select id="filter-soil" class="micro" style="padding:10px;border-radius:10px;border:1px solid rgba(15,23,36,0.06)">
+            <option value="all">All Soils</option>
+          </select>
 
-          <label class="small">Result (JSON)</label>
-          <textarea id="test-result" class="input" rows="6" placeholder='{"liquid_limit": 42, "plastic_limit": 18}'></textarea>
+          <select id="filter-type" class="micro" style="padding:10px;border-radius:10px;border:1px solid rgba(15,23,36,0.06)">
+            <option value="all">All Types</option>
+            <option>Index</option>
+            <option>Compaction</option>
+            <option>Strength</option>
+            <option>Permeability</option>
+            <option>Other</option>
+          </select>
 
-          <div class="flex items-center gap-3 pt-2">
-            <button id="add-test" class="btn">Save test</button>
-            <div id="add-test-status" class="small"> </div>
+          <select id="filter-status" class="micro" style="padding:10px;border-radius:10px;border:1px solid rgba(15,23,36,0.06)">
+            <option value="all">All Status</option>
+            <option>Draft</option>
+            <option>In Progress</option>
+            <option>Completed</option>
+            <option>Reviewed</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Compare banner (hidden when none selected) -->
+      <div id="compare-banner" style="display:none;flex:1;min-width:220px" class="card">
+        <div style="display:flex;align-items:center;justify-content:space-between">
+          <div style="display:flex;align-items:center;gap:10px">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none"><path d="M3 12h18" stroke="#fff" stroke-width="1.6" stroke-linecap="round"/></svg>
+            <div><strong id="compare-count">0</strong> selected</div>
+          </div>
+          <div style="display:flex;gap:8px">
+            <button id="compare-now" class="btn micro">Compare</button>
+            <button id="compare-clear" class="ghost micro">Clear</button>
           </div>
         </div>
       </div>
+    </div>
 
-      <!-- Middle: Recent Tests + Search -->
-      <div class="card lg:col-span-1">
-        <div class="flex items-center justify-between mb-3">
-          <h2 class="text-lg font-semibold">Recent Tests</h2>
-          <div class="tag" id="test-count">0</div>
-        </div>
-
-        <div class="mb-3">
-          <input id="search" class="input" placeholder="Search by test name or soil id..." />
-        </div>
-
-        <div id="tests-list" style="max-height:580px; overflow:auto; display:block;">
-          <div class="muted">Loading tests...</div>
+    <!-- Grid of test cards + right chart -->
+    <div style="display:grid;grid-template-columns:1fr 340px;gap:18px;margin-top:18px">
+      <!-- Left: cards -->
+      <div>
+        <div id="tests-grid" style="display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:16px">
+          <!-- cards injected here -->
         </div>
       </div>
 
-      <!-- Right: Charts -->
-      <div class="card lg:col-span-1">
-        <h2 class="text-lg font-semibold mb-2">Summary</h2>
-        <canvas id="testsChart" style="width:100%; height:240px"></canvas>
-        <div class="pt-4 small muted">Showing recent test distribution</div>
+      <!-- Right: summary + chart -->
+      <div>
+        <div class="card" style="margin-bottom:12px">
+          <div style="display:flex;justify-content:space-between;align-items:center">
+            <div>
+              <div style="font-weight:700">Summary</div>
+              <div class="muted" style="font-size:13px">Recent tests overview</div>
+            </div>
+            <div class="chip" id="total-tests">0</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <canvas id="summaryChart" style="width:100%;height:280px"></canvas>
+        </div>
       </div>
     </div>
+
+    <!-- Footer small -->
+    <div style="margin-top:26px" class="muted">Tip: click a card to open quick details. Use Compare to select multiple tests and open Comparison.</div>
   </div>
 
+  <!-- Quick view modal placeholder -->
+  <div id="modal-root"></div>
+
 <script>
-/* ---------- Supabase settings (already configured) ---------- */
+/* ================== Supabase settings (already your project) ================== */
 const SUPABASE_URL = "https://masgbgxihatymnqlwjej.supabase.co";
 const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hc2diZ3hpaGF0eW1ucWx3amVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMDY0NTEsImV4cCI6MjA3ODc4MjQ1MX0.iVyY49idmzRy7r2ISFonQDCuBkIBycn-7Z7JbBxsVKQ";
 
-/* ---------- Helpers ---------- */
+/* ================== Small helpers ================== */
 async function apiGET(path) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     headers: { apikey: SUPABASE_ANON_KEY }
@@ -94,7 +249,6 @@ async function apiGET(path) {
   if (!res.ok) throw new Error(await res.text());
   return res.json();
 }
-
 async function apiPOST(path, body) {
   const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
     method: "POST",
@@ -109,154 +263,290 @@ async function apiPOST(path, body) {
   return res.json();
 }
 
-/* ---------- App logic ---------- */
-let allTests = [];
-let allSoils = [];
-const testsListEl = document.getElementById('tests-list');
-const soilSelect = document.getElementById('soil-select');
-const addStatusEl = document.getElementById('add-test-status');
-const testCountEl = document.getElementById('test-count');
-const searchEl = document.getElementById('search');
+function escapeHtml(t){ return (t===null||t===undefined)?'':String(t).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function prettyJSON(o){ try { return JSON.stringify(o, null, 2); } catch(e) { return String(o); } }
 
-async function fetchInitial() {
+/* ================== Data + State ================== */
+let allSoils = [];
+let allTests = [];
+let selected = new Set();
+
+/* normalize fields from different schemas (Base44 vs our earlier tables) */
+function normalizeTest(t) {
+  // t may have testName or test_name, sampleID or soil_id, keyResults or result or key_results
+  const testName = t.testName || t.test_name || t.test_name || t.testname || t.name || '';
+  const testType = t.testType || t.test_type || t.type || '';
+  const sampleID = t.sampleID || t.sample_id || t.soil_id || t.sample || '';
+  const keyResults = t.keyResults || t.result || t.key_results || t.result_json || null;
+  const id = t.id || t.testID || t.test_id || (t._id || null);
+  const status = t.status || t.test_status || t.state || 'Draft';
+  const created_at = t.created_at || t.testDate || t.createdAt || t.created || null;
+  // allow a convenience 'result' summary if keyResults absent
+  const resultSummary = typeof keyResults === 'string' ? keyResults : (keyResults && typeof keyResults === 'object' ? Object.values(keyResults)[0] : (t.result || t.keyResults || 'N/A'));
+  return { ...t, id, testName, testType, sampleID, keyResults, status, created_at, resultSummary };
+}
+
+/* ================== UI refs ================== */
+const testsGrid = document.getElementById('tests-grid');
+const filterSoil = document.getElementById('filter-soil');
+const filterType = document.getElementById('filter-type');
+const filterStatus = document.getElementById('filter-status');
+const qInput = document.getElementById('q');
+const compareBanner = document.getElementById('compare-banner');
+const compareCount = document.getElementById('compare-count');
+const compareNowBtn = document.getElementById('compare-now');
+const compareClearBtn = document.getElementById('compare-clear');
+const totalTestsEl = document.getElementById('total-tests');
+
+/* ================== fetch soils & tests ================== */
+async function loadSoils() {
   try {
     allSoils = await apiGET('soils?select=id,name,sample_id&order=created_at.desc');
-    soilSelect.innerHTML = '<option value="">— Select soil (optional) —</option>';
+    // populate soil select
+    filterSoil.innerHTML = '<option value="all">All Soils</option>';
     allSoils.forEach(s => {
-      const o = document.createElement('option'); o.value = s.id; o.textContent = s.name || s.sample_id || s.id; soilSelect.appendChild(o);
+      const opt = document.createElement('option');
+      opt.value = s.sample_id || s.id || s.sampleID || s.sampleId || s.name;
+      opt.textContent = s.name ? `${s.name} (${s.sample_id || s.id})` : (s.sample_id || s.id);
+      filterSoil.appendChild(opt);
     });
   } catch (e) {
-    console.error('Failed to load soils', e);
-    soilSelect.innerHTML = '<option value="">Failed to load soils</option>';
+    console.warn('loadSoils failed', e);
   }
-
-  await refreshTests();
 }
 
-async function refreshTests() {
+async function loadTests() {
   try {
-    allTests = await apiGET('tests?select=*&order=created_at.desc');
-    testCountEl.innerText = allTests.length;
-    renderTests(allTests);
-    renderChart(allTests);
+    const raw = await apiGET('tests?select=*&order=created_at.desc');
+    // normalize
+    allTests = raw.map(normalizeTest);
+    renderTests();
+    renderChart();
+    totalTestsEl.textContent = String(allTests.length);
   } catch (e) {
-    testsListEl.innerHTML = `<div class="muted">Error loading tests: ${escapeHtml(String(e).slice(0,200))}</div>`;
-    console.error(e);
+    console.error('loadTests failed', e);
+    testsGrid.innerHTML = `<div class="muted">Error loading tests: ${escapeHtml(String(e).slice(0,140))}</div>`;
   }
 }
 
-function renderTests(tests) {
-  testsListEl.innerHTML = '';
-  if (!tests.length) { testsListEl.innerHTML = '<div class="muted">No tests yet. Add one on the left.</div>'; return; }
-  const filtered = applySearchFilter(tests);
-  filtered.forEach(t => {
-    const soilName = (allSoils.find(s => s.id === t.soil_id) || {}).name || (t.soil_id ? t.soil_id.slice(0,6) : '—');
+/* ================== rendering functions ================== */
+function getStatusColor(status) {
+  switch(status) {
+    case 'Completed': return 'green';
+    case 'In Progress': return 'yellow';
+    case 'Reviewed': return 'blue';
+    default: return 'gray';
+  }
+}
+
+function renderTests() {
+  const q = (qInput.value || '').trim().toLowerCase();
+  const soilF = filterSoil.value || 'all';
+  const typeF = filterType.value || 'all';
+  const statusF = filterStatus.value || 'all';
+
+  const filtered = allTests.filter(t => {
+    if (soilF !== 'all' && String(t.sampleID || '').indexOf(soilF) === -1) return false;
+    if (typeF !== 'all' && (t.testType || '').toLowerCase() !== typeF.toLowerCase()) return false;
+    if (statusF !== 'all' && (t.status || '').toLowerCase() !== statusF.toLowerCase()) return false;
+    if (q) {
+      const hay = `${t.testName} ${t.sampleID} ${t.testType}`.toLowerCase();
+      if (!hay.includes(q)) return false;
+    }
+    return true;
+  });
+
+  testsGrid.innerHTML = '';
+  if (!filtered.length) {
+    testsGrid.innerHTML = `<div class="card" style="grid-column: 1 / -1;">
+      <div style="text-align:center;padding:36px">
+        <svg width="44" height="44" viewBox="0 0 24 24" fill="none"><path d="M3 12h18" stroke="#9AA" stroke-width="1.6" stroke-linecap="round"/></svg>
+        <div style="font-weight:700;margin-top:8px">No tests match your filters</div>
+        <div class="muted" style="margin-top:6px">Try clearing filters or add tests via Admin</div>
+      </div>
+    </div>`;
+    return;
+  }
+
+  filtered.forEach((t, idx) => {
     const el = document.createElement('div');
-    el.style.marginBottom = '12px';
+    el.className = 'card';
+    // is selected
+    const isSelected = selected.has(String(t.id));
     el.innerHTML = `
-      <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
-        <div style="flex:1">
-          <div style="font-weight:700">${escapeHtml(t.test_name || 'Unnamed test')}</div>
-          <div class="muted" style="font-size:13px;margin-top:4px">${escapeHtml(soilName)} • ${new Date(t.created_at).toLocaleString()}</div>
-          <pre class="json" style="margin-top:8px">${escapeHtml(prettyJSON(t.result || {}))}</pre>
+      <div style="position:relative;">
+        <div style="position:absolute;right:14px;top:14px;display:flex;gap:8px;align-items:center">
+          <div style="display:flex;align-items:center;gap:8px">
+            <span class="status-dot" style="background:${t.status === 'Completed'? '#10B981' : (t.status === 'In Progress'? '#F59E0B' : (t.status === 'Reviewed'? '#3B82F6':'#9CA3AF'))}"></span>
+            <input type="checkbox" data-id="${escapeHtml(String(t.id))}" ${isSelected? 'checked' : ''} />
+          </div>
         </div>
-        <div style="width:80px;text-align:right">
-          <div class="tag" style="display:inline-block">${escapeHtml(String(Object.keys(t.result||{}).length))} fields</div>
+
+        <div style="display:flex;gap:14px;align-items:flex-start">
+          <div style="width:64px;height:64px;border-radius:12px;flex-shrink:0;background:linear-gradient(135deg,var(--secondary),var(--primary));display:flex;align-items:center;justify-content:center;color:white;font-weight:800">
+            ${escapeHtml((t.testName||'T').slice(0,2)).toUpperCase()}
+          </div>
+
+          <div style="flex:1">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+              <div>
+                <div style="font-weight:800;font-size:1.02rem;color:var(--primary)">${escapeHtml(t.testName || 'Unnamed')}</div>
+                <div class="muted" style="margin-top:6px">${escapeHtml(t.testType || '')} • ${escapeHtml(t.sampleID || '')}</div>
+              </div>
+              <div style="text-align:right">
+                <div class="chip">${(t.keyResults && typeof t.keyResults === 'object') ? Object.keys(t.keyResults).length : (t.resultSummary ? 1 : 0)} fields</div>
+              </div>
+            </div>
+
+            <div style="margin-top:12px" class="result-box">
+              <div class="muted" style="font-size:12px">Key Result</div>
+              <div style="font-family:monospace;font-weight:800;font-size:1.3rem;color:var(--accent1);margin-top:6px">
+                ${escapeHtml(String((t.keyResults && Object.values(t.keyResults || {})[0]) || t.resultSummary || 'N/A'))}
+              </div>
+            </div>
+
+            <div style="display:flex;gap:8px;margin-top:12px">
+              <button class="micro btn" data-action="view" data-id="${escapeHtml(String(t.id))}">View Details</button>
+              <button class="micro ghost" data-action="raw" data-id="${escapeHtml(String(t.id))}">Raw</button>
+            </div>
+          </div>
         </div>
       </div>
     `;
-    testsListEl.appendChild(el);
+
+    // append and attach handlers
+    testsGrid.appendChild(el);
+
+    // checkbox handler
+    const cb = el.querySelector('input[type=checkbox]');
+    cb.addEventListener('change', (ev) => {
+      const id = ev.target.getAttribute('data-id');
+      if (ev.target.checked) selected.add(id); else selected.delete(id);
+      refreshCompareBanner();
+    });
+
+    // view handler
+    el.querySelector('[data-action="view"]').addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      const id = ev.target.getAttribute('data-id');
+      const obj = allTests.find(x => String(x.id) === String(id));
+      showQuickView(obj || t);
+    });
+
+    // raw handler (open JSON)
+    el.querySelector('[data-action="raw"]').addEventListener('click', (ev)=>{
+      ev.stopPropagation();
+      const id = ev.target.getAttribute('data-id');
+      const obj = allTests.find(x => String(x.id) === String(id));
+      alert(prettyJSON(obj || t));
+    });
+
+    // card click opens quick view too
+    el.addEventListener('click', ()=> {
+      showQuickView(t);
+    });
   });
 }
 
-function applySearchFilter(tests) {
-  const q = (searchEl.value || '').trim().toLowerCase();
-  if (!q) return tests;
-  return tests.filter(t => {
-    const name = (t.test_name||'').toLowerCase();
-    const soil = (t.soil_id||'').toLowerCase();
-    return name.includes(q) || soil.includes(q);
-  });
+/* ================== compare banner ================== */
+function refreshCompareBanner() {
+  const count = selected.size;
+  if (count > 0) {
+    compareBanner.style.display = 'block';
+    compareCount.textContent = String(count);
+  } else {
+    compareBanner.style.display = 'none';
+  }
 }
 
-/* ---------- add test handler ---------- */
-document.getElementById('add-test').onclick = async () => {
-  addStatusEl.innerText = 'Saving...';
-  let name = document.getElementById('test-name').value.trim() || 'Untitled Test';
-  let resRaw = document.getElementById('test-result').value.trim() || '{}';
-  let resultValue = {};
-  try {
-    resultValue = JSON.parse(resRaw);
-  } catch (e) {
-    alert('Result must be valid JSON. Example: {"liquid_limit": 42}');
-    addStatusEl.innerText = 'Invalid JSON';
-    return;
-  }
-  const soilId = document.getElementById('soil-select').value || null;
+/* ================== quick view modal ================== */
+function showQuickView(item) {
+  if (!item) return;
+  const root = document.getElementById('modal-root');
+  root.innerHTML = '';
+  const backdrop = document.createElement('div');
+  backdrop.className = 'modal-backdrop';
+  backdrop.innerHTML = `
+    <div class="modal-panel">
+      <div style="display:flex;justify-content:space-between;align-items:center">
+        <div>
+          <div style="font-weight:800;font-size:20px">${escapeHtml(item.testName || item.test_name || 'Test')}</div>
+          <div class="muted" style="margin-top:6px">${escapeHtml(item.sampleID || item.sample_id || '')} • ${escapeHtml(item.testType || item.test_type || '')}</div>
+        </div>
+        <button id="close-quick" class="ghost">Close</button>
+      </div>
+      <div style="margin-top:12px">
+        <div style="font-weight:700">Status</div>
+        <div style="display:flex;gap:10px;align-items:center;margin-top:6px">
+          <span class="status-dot" style="background:${item.status === 'Completed'? '#10B981' : (item.status === 'In Progress'? '#F59E0B' : (item.status === 'Reviewed'? '#3B82F6':'#9CA3AF'))}"></span>
+          <div style="font-weight:600">${escapeHtml(item.status || 'Draft')}</div>
+        </div>
+      </div>
 
-  try {
-    await apiPOST('tests', { soil_id: soilId, test_name: name, result: resultValue });
-    addStatusEl.innerText = 'Saved!';
-    // clear inputs lightly after saving
-    document.getElementById('test-name').value = '';
-    document.getElementById('test-result').value = '';
-    document.getElementById('soil-select').value = '';
-    // refresh
-    await refreshTests();
-    setTimeout(()=>{ addStatusEl.innerText = ''; }, 1200);
-  } catch (e) {
-    addStatusEl.innerText = 'Error: ' + (e.message||'failed');
-    console.error(e);
-  }
-};
+      <div style="margin-top:16px">
+        <div style="font-weight:700;margin-bottom:8px">Key Results</div>
+        <pre class="pjson">${escapeHtml(prettyJSON(item.keyResults || item.result || {}))}</pre>
+      </div>
 
-/* ---------- Search input ---------- */
-searchEl.addEventListener('input', ()=> renderTests(allTests));
+      <div style="margin-top:12px;display:flex;gap:8px;justify-content:flex-end">
+        <a class="btn" href="/test-detail.html?id=${encodeURIComponent(item.id || item.testID || '')}">Open Full</a>
+        <button id="close-quick2" class="ghost">Close</button>
+      </div>
+    </div>
+  `;
+  root.appendChild(backdrop);
+  backdrop.querySelector('#close-quick').onclick = () => root.innerHTML = '';
+  backdrop.querySelector('#close-quick2').onclick = () => root.innerHTML = '';
+  backdrop.addEventListener('click', (e)=> { if (e.target === backdrop) root.innerHTML = ''; });
+}
 
-/* ---------- small utilities ---------- */
-function escapeHtml(t){ return (t===null||t===undefined)?'':String(t).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
-function prettyJSON(obj){ try { return JSON.stringify(obj, null, 2); } catch(e) { return String(obj); } }
-
-/* ---------- Chart (simple distribution of test names) ---------- */
+/* ================== chart ================== */
 let chartInstance = null;
-function renderChart(tests) {
+function renderChart() {
   try {
     const labels = [];
     const counts = {};
-    // count by test_name (shortened)
-    tests.slice(0,50).forEach(t => {
-      const k = (t.test_name || 'Unnamed').slice(0,18);
+    allTests.slice(0,200).forEach(t => {
+      const k = (t.testName || 'Unnamed').slice(0,18);
       counts[k] = (counts[k] || 0) + 1;
     });
-    Object.keys(counts).slice(0,10).forEach(k => labels.push(k));
-    const data = labels.map(l => counts[l] || 0);
-
-    const ctx = document.getElementById('testsChart').getContext('2d');
+    const keys = Object.keys(counts).slice(0,8);
+    const data = keys.map(k => counts[k]);
+    const ctx = document.getElementById('summaryChart').getContext('2d');
     if (chartInstance) chartInstance.destroy();
     chartInstance = new Chart(ctx, {
       type: 'bar',
-      data: {
-        labels,
-        datasets: [{ label: 'Tests', data, backgroundColor: 'rgba(88,165,199,0.9)' }]
-      },
-      options: {
-        responsive: true,
-        maintainAspectRatio: false,
-        scales: {
-          x: { ticks: { color: '#cfe' } },
-          y: { ticks: { color: '#cfe' } }
-        },
-        plugins: { legend: { labels: { color: '#cfe' } } }
-      }
+      data: { labels: keys, datasets: [{ label: 'Tests', data, backgroundColor: 'rgba(88,165,199,0.95)', borderRadius: 8 }] },
+      options: { responsive:true, maintainAspectRatio:false, scales:{ x:{ ticks:{ color:'#334' } }, y:{ ticks:{ color:'#334' } } }, plugins: { legend:{ display:false } } }
     });
-  } catch (e) {
-    console.warn('Chart error', e);
-  }
+  } catch(e) { console.warn('chart', e); }
 }
 
-/* ---------- init ---------- */
-(async () => {
-  await fetchInitial();
+/* ================== initial load & events ================== */
+document.getElementById('q').addEventListener('input', ()=> renderTests());
+filterSoil.addEventListener('change', ()=> renderTests());
+filterType.addEventListener('change', ()=> renderTests());
+filterStatus.addEventListener('change', ()=> renderTests());
+compareClearBtn.addEventListener('click', ()=> { selected.clear(); refreshCompareBanner(); renderTests(); });
+compareNowBtn.addEventListener('click', ()=> {
+  // build a URL with selected ids and open comparison page if exists
+  const ids = Array.from(selected);
+  if (!ids.length) return alert('Select some tests first');
+  const url = '/comparison.html?ids=' + encodeURIComponent(ids.join(','));
+  window.open(url, '_blank');
+});
+
+/* Submit new test helper: page doesn't include a form here (Admin handles add). But we keep a small helper for console */
+async function addTestConsole(sampleID, testName, jsonResult) {
+  const row = { soil_id: sampleID, test_name: testName, result: jsonResult };
+  return apiPOST('tests', row);
+}
+
+/* kick off */
+(async function init(){
+  await loadSoils();
+  await loadTests();
+  refreshCompareBanner();
 })();
 </script>
 </body>
