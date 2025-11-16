@@ -1,150 +1,263 @@
 <!doctype html>
 <html>
 <head>
-  <meta charset="utf-8">
-  <title>Test Dashboard - Geotech Portfolio</title>
+  <meta charset="utf-8" />
+  <title>Test Dashboard — Geotech Portfolio</title>
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
   <script src="https://cdn.tailwindcss.com"></script>
+  <!-- Chart.js for charts -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
-    body{background:#071024;color:#fff;font-family:system-ui;padding:24px}
-    .card{background:#0b2130;padding:12px;border-radius:10px}
-    .muted{color:#9fb}
-    .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(320px,1fr));gap:16px}
+    body { background: #071024; color: #fff; font-family: Inter, ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial; }
+    .muted { color: #9fb; }
+    .card { background: #0b2130; padding: 18px; border-radius: 12px; box-shadow: 0 6px 18px rgba(2,8,23,0.5); }
+    .input { background:#071827; border:1px solid #123246; color:#e6f0ff; padding:8px 10px; border-radius:8px; width:100%; }
+    pre.json { background:#061223; padding:12px; border-radius:8px; color:#cfe; font-size:13px; white-space:pre-wrap; }
+    .btn { background: linear-gradient(180deg,#2b8ad6,#1f6cb0); padding:10px 14px; border-radius:9px; color:white; border:0; font-weight:600; }
+    .small { font-size:0.9rem; color:#9fb; }
+    .table-head { color:#bcd; font-weight:600; font-size:0.95rem; }
+    .tag { background:#143b53; padding:6px 10px; border-radius:999px; font-size:0.85rem; color:#bfe; }
   </style>
 </head>
 <body>
-  <div class="max-w-7xl mx-auto">
-    <header class="flex items-center justify-between mb-6">
+  <div class="max-w-7xl mx-auto p-6">
+    <header class="flex items-start justify-between mb-6">
       <div>
-        <h1 class="text-2xl font-bold">Test Dashboard</h1>
-        <div class="muted">Add tests and view results</div>
+        <h1 class="text-3xl font-bold">Test Dashboard</h1>
+        <div class="muted">Add tests, inspect results and visualize data — polished UI</div>
       </div>
-      <div class="flex gap-3">
-        <a href="/" class="chip">Home</a>
-        <a href="/soil-samples.html" class="chip">Samples</a>
-        <a href="/admin.html" class="chip">Admin</a>
+      <div class="flex items-center gap-3">
+        <a href="/" class="small">Home</a>
+        <a href="/soil-samples.html" class="small">Soils</a>
+        <a href="/gallery.html" class="small">Gallery</a>
+        <a href="/admin.html" class="small">Admin</a>
       </div>
     </header>
 
-    <section class="mb-6">
-      <div class="card">
-        <h3 class="font-semibold mb-2">Add New Test</h3>
-        <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px">
-          <select id="soil-select"></select>
-          <input id="test-name" placeholder="Test name (e.g., Atterberg Limits)"/>
-        </div>
-        <textarea id="test-result" placeholder='Result JSON (e.g., {"liquid_limit": 42})' style="width:100%;height:120px;margin-top:8px;background:#081827;color:#e6f0ff;padding:8px;border-radius:6px;border:1px solid #233"></textarea>
-        <div style="margin-top:8px"><button id="add-test" class="px-4 py-2">Save Test</button> <span id="add-test-status" class="muted"></span></div>
-      </div>
-    </section>
+    <div class="grid lg:grid-cols-3 gap-6">
+      <!-- Left: Add Test -->
+      <div class="card lg:col-span-1">
+        <h2 class="text-lg font-semibold mb-3">Add New Test</h2>
 
-    <section>
-      <h3 class="mb-3">Recent Tests</h3>
-      <div id="tests-list" class="grid">Loading tests…</div>
-    </section>
+        <div class="space-y-3">
+          <label class="small">Soil</label>
+          <select id="soil-select" class="input"></select>
+
+          <label class="small">Test name</label>
+          <input id="test-name" class="input" placeholder="e.g., Atterberg Limits" />
+
+          <label class="small">Result (JSON)</label>
+          <textarea id="test-result" class="input" rows="6" placeholder='{"liquid_limit": 42, "plastic_limit": 18}'></textarea>
+
+          <div class="flex items-center gap-3 pt-2">
+            <button id="add-test" class="btn">Save test</button>
+            <div id="add-test-status" class="small"> </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Middle: Recent Tests + Search -->
+      <div class="card lg:col-span-1">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-lg font-semibold">Recent Tests</h2>
+          <div class="tag" id="test-count">0</div>
+        </div>
+
+        <div class="mb-3">
+          <input id="search" class="input" placeholder="Search by test name or soil id..." />
+        </div>
+
+        <div id="tests-list" style="max-height:580px; overflow:auto; display:block;">
+          <div class="muted">Loading tests...</div>
+        </div>
+      </div>
+
+      <!-- Right: Charts -->
+      <div class="card lg:col-span-1">
+        <h2 class="text-lg font-semibold mb-2">Summary</h2>
+        <canvas id="testsChart" style="width:100%; height:240px"></canvas>
+        <div class="pt-4 small muted">Showing recent test distribution</div>
+      </div>
+    </div>
   </div>
 
 <script>
-  const SUPABASE_URL = "https://masgbgxihatymnqlwjej.supabase.co";
-  const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hc2diZ3hpaGF0eW1ucWx3amVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMDY0NTEsImV4cCI6MjA3ODc4MjQ1MX0.iVyY49idmzRy7r2ISFonQDCuBkIBycn-7Z7JbBxsVKQ";
+/* ---------- Supabase settings (already configured) ---------- */
+const SUPABASE_URL = "https://masgbgxihatymnqlwjej.supabase.co";
+const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im1hc2diZ3hpaGF0eW1ucWx3amVqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjMyMDY0NTEsImV4cCI6MjA3ODc4MjQ1MX0.iVyY49idmzRy7r2ISFonQDCuBkIBycn-7Z7JbBxsVKQ";
 
-  async function fetchSoils() {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/soils?select=id,name,sample_id&order=created_at.desc`, {
-      headers: { apikey: SUPABASE_ANON_KEY }
+/* ---------- Helpers ---------- */
+async function apiGET(path) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    headers: { apikey: SUPABASE_ANON_KEY }
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+async function apiPOST(path, body) {
+  const res = await fetch(`${SUPABASE_URL}/rest/v1/${path}`, {
+    method: "POST",
+    headers: {
+      apikey: SUPABASE_ANON_KEY,
+      "Content-Type": "application/json",
+      "Prefer": "return=representation"
+    },
+    body: JSON.stringify(body)
+  });
+  if (!res.ok) throw new Error(await res.text());
+  return res.json();
+}
+
+/* ---------- App logic ---------- */
+let allTests = [];
+let allSoils = [];
+const testsListEl = document.getElementById('tests-list');
+const soilSelect = document.getElementById('soil-select');
+const addStatusEl = document.getElementById('add-test-status');
+const testCountEl = document.getElementById('test-count');
+const searchEl = document.getElementById('search');
+
+async function fetchInitial() {
+  try {
+    allSoils = await apiGET('soils?select=id,name,sample_id&order=created_at.desc');
+    soilSelect.innerHTML = '<option value="">— Select soil (optional) —</option>';
+    allSoils.forEach(s => {
+      const o = document.createElement('option'); o.value = s.id; o.textContent = s.name || s.sample_id || s.id; soilSelect.appendChild(o);
     });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+  } catch (e) {
+    console.error('Failed to load soils', e);
+    soilSelect.innerHTML = '<option value="">Failed to load soils</option>';
   }
 
-  async function fetchTests() {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/tests?select=*&order=created_at.desc`, {
-      headers: { apikey: SUPABASE_ANON_KEY }
-    });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
-  }
+  await refreshTests();
+}
 
-  async function insertTest(row) {
-    const res = await fetch(`${SUPABASE_URL}/rest/v1/tests`, {
-      method: "POST",
-      headers: {
-        apikey: SUPABASE_ANON_KEY,
-        "Content-Type":"application/json",
-        "Prefer":"return=representation"
-      },
-      body: JSON.stringify(row)
-    });
-    if (!res.ok) throw new Error(await res.text());
-    return res.json();
+async function refreshTests() {
+  try {
+    allTests = await apiGET('tests?select=*&order=created_at.desc');
+    testCountEl.innerText = allTests.length;
+    renderTests(allTests);
+    renderChart(allTests);
+  } catch (e) {
+    testsListEl.innerHTML = `<div class="muted">Error loading tests: ${escapeHtml(String(e).slice(0,200))}</div>`;
+    console.error(e);
   }
+}
 
-  function renderTests(tests) {
-    const list = document.getElementById('tests-list');
-    list.innerHTML = '';
-    if (!tests.length) { list.innerHTML = '<div class="muted">No tests found.</div>'; return; }
-    tests.forEach(t => {
-      // pretty-print result JSON if possible
-      let pretty = '';
-      try { pretty = JSON.stringify(t.result, null, 2); } catch(e) { pretty = String(t.result); }
-      const card = document.createElement('div');
-      card.className = 'card';
-      card.innerHTML = `
-        <div class="flex justify-between items-start">
-          <div>
-            <div class="font-semibold">${escapeHtml(t.test_name || 'Unnamed test')}</div>
-            <div class="muted text-sm">Soil ID: ${escapeHtml(t.soil_id || '')}</div>
-          </div>
-          <div class="muted text-sm">${new Date(t.created_at).toLocaleString()}</div>
+function renderTests(tests) {
+  testsListEl.innerHTML = '';
+  if (!tests.length) { testsListEl.innerHTML = '<div class="muted">No tests yet. Add one on the left.</div>'; return; }
+  const filtered = applySearchFilter(tests);
+  filtered.forEach(t => {
+    const soilName = (allSoils.find(s => s.id === t.soil_id) || {}).name || (t.soil_id ? t.soil_id.slice(0,6) : '—');
+    const el = document.createElement('div');
+    el.style.marginBottom = '12px';
+    el.innerHTML = `
+      <div style="display:flex;justify-content:space-between;gap:12px;align-items:flex-start">
+        <div style="flex:1">
+          <div style="font-weight:700">${escapeHtml(t.test_name || 'Unnamed test')}</div>
+          <div class="muted" style="font-size:13px;margin-top:4px">${escapeHtml(soilName)} • ${new Date(t.created_at).toLocaleString()}</div>
+          <pre class="json" style="margin-top:8px">${escapeHtml(prettyJSON(t.result || {}))}</pre>
         </div>
-        <pre style="margin-top:8px;background:#061223;padding:8px;border-radius:6px;color:#cfe;font-size:13px;white-space:pre-wrap">${escapeHtml(pretty)}</pre>
-      `;
-      list.appendChild(card);
-    });
+        <div style="width:80px;text-align:right">
+          <div class="tag" style="display:inline-block">${escapeHtml(String(Object.keys(t.result||{}).length))} fields</div>
+        </div>
+      </div>
+    `;
+    testsListEl.appendChild(el);
+  });
+}
+
+function applySearchFilter(tests) {
+  const q = (searchEl.value || '').trim().toLowerCase();
+  if (!q) return tests;
+  return tests.filter(t => {
+    const name = (t.test_name||'').toLowerCase();
+    const soil = (t.soil_id||'').toLowerCase();
+    return name.includes(q) || soil.includes(q);
+  });
+}
+
+/* ---------- add test handler ---------- */
+document.getElementById('add-test').onclick = async () => {
+  addStatusEl.innerText = 'Saving...';
+  let name = document.getElementById('test-name').value.trim() || 'Untitled Test';
+  let resRaw = document.getElementById('test-result').value.trim() || '{}';
+  let resultValue = {};
+  try {
+    resultValue = JSON.parse(resRaw);
+  } catch (e) {
+    alert('Result must be valid JSON. Example: {"liquid_limit": 42}');
+    addStatusEl.innerText = 'Invalid JSON';
+    return;
   }
+  const soilId = document.getElementById('soil-select').value || null;
 
-  function escapeHtml(t){ return (t===null||t===undefined)?'':String(t).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+  try {
+    await apiPOST('tests', { soil_id: soilId, test_name: name, result: resultValue });
+    addStatusEl.innerText = 'Saved!';
+    // clear inputs lightly after saving
+    document.getElementById('test-name').value = '';
+    document.getElementById('test-result').value = '';
+    document.getElementById('soil-select').value = '';
+    // refresh
+    await refreshTests();
+    setTimeout(()=>{ addStatusEl.innerText = ''; }, 1200);
+  } catch (e) {
+    addStatusEl.innerText = 'Error: ' + (e.message||'failed');
+    console.error(e);
+  }
+};
 
-  // init
-  (async ()=>{
-    try {
-      const soils = await fetchSoils();
-      const soilSelect = document.getElementById('soil-select');
-      soilSelect.innerHTML = '<option value="">Select soil (optional)</option>';
-      soils.forEach(s => {
-        const o = document.createElement('option'); o.value = s.id; o.textContent = `${s.name || s.sample_id || s.id}`; soilSelect.appendChild(o);
-      });
+/* ---------- Search input ---------- */
+searchEl.addEventListener('input', ()=> renderTests(allTests));
 
-      // preselect soil if ?soil=...
-      const params = new URLSearchParams(window.location.search);
-      const qs = params.get('soil');
-      if (qs) { soilSelect.value = qs; }
+/* ---------- small utilities ---------- */
+function escapeHtml(t){ return (t===null||t===undefined)?'':String(t).replace(/[&<>"']/g, c=>({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c])); }
+function prettyJSON(obj){ try { return JSON.stringify(obj, null, 2); } catch(e) { return String(obj); } }
 
-      document.getElementById('add-test').onclick = async () => {
-        const soilId = soilSelect.value || null;
-        const name = document.getElementById('test-name').value || 'Untitled Test';
-        let resultVal = document.getElementById('test-result').value || '{}';
-        try { resultVal = JSON.parse(resultVal); } catch(e) {
-          alert('Result must be valid JSON'); return;
-        }
-        document.getElementById('add-test-status').innerText = 'Saving...';
-        try {
-          await insertTest({ soil_id: soilId, test_name: name, result: resultVal });
-          document.getElementById('add-test-status').innerText = 'Saved!';
-          // refresh tests list
-          const tests = await fetchTests();
-          renderTests(tests);
-        } catch (e) {
-          document.getElementById('add-test-status').innerText = 'Error: ' + e.message;
-          console.error(e);
-        }
-      };
+/* ---------- Chart (simple distribution of test names) ---------- */
+let chartInstance = null;
+function renderChart(tests) {
+  try {
+    const labels = [];
+    const counts = {};
+    // count by test_name (shortened)
+    tests.slice(0,50).forEach(t => {
+      const k = (t.test_name || 'Unnamed').slice(0,18);
+      counts[k] = (counts[k] || 0) + 1;
+    });
+    Object.keys(counts).slice(0,10).forEach(k => labels.push(k));
+    const data = labels.map(l => counts[l] || 0);
 
-      const tests = await fetchTests();
-      renderTests(tests);
-    } catch (e) {
-      document.getElementById('tests-list').innerText = 'Error: ' + e.message;
-      console.error(e);
-    }
-  })();
+    const ctx = document.getElementById('testsChart').getContext('2d');
+    if (chartInstance) chartInstance.destroy();
+    chartInstance = new Chart(ctx, {
+      type: 'bar',
+      data: {
+        labels,
+        datasets: [{ label: 'Tests', data, backgroundColor: 'rgba(88,165,199,0.9)' }]
+      },
+      options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        scales: {
+          x: { ticks: { color: '#cfe' } },
+          y: { ticks: { color: '#cfe' } }
+        },
+        plugins: { legend: { labels: { color: '#cfe' } } }
+      }
+    });
+  } catch (e) {
+    console.warn('Chart error', e);
+  }
+}
+
+/* ---------- init ---------- */
+(async () => {
+  await fetchInitial();
+})();
 </script>
 </body>
 </html>
